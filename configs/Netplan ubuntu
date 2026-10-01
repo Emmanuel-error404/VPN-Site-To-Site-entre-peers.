@@ -1,0 +1,20 @@
+# Archivo: /etc/netplan/00-installer-config.yaml
+# Equipo: Ubuntu Server (servidor web, detras del FortiGate)
+# Proposito: IP estatica 10.7.98.2/28 con gateway en port3 del FortiGate
+# Aplicar con: sudo netplan apply
+network:
+  ethernets:
+    ens33:
+      dhcp4: false
+      dhcp6: false
+      addresses:
+        - 10.7.98.2/28
+      routes:
+        - to: default
+          via: 10.7.98.1
+      nameservers:
+        addresses: [8.8.8.8]
+      match:
+        macaddress: 00:0c:29:89:df:6b
+      set-name: ens33
+  version: 2
