@@ -1,0 +1,55 @@
+! Equipo: R2 (Cisco IOS) - lado usuario
+! Proposito: WAN, VLAN 10 con DHCP, NAT y VPN IPsec hacia el FortiGate
+! Nota: la clave precompartida se reemplazo por <CLAVE-PRECOMPARTIDA>
+enable
+configure terminal
+hostname R2
+
+interface f0/0
+ description WAN
+ ip address 20.25.7.2 255.255.255.252
+ ip nat outside
+ no shutdown
+interface g1/0
+ description LAN-USUARIOS
+ no ip address
+ no shutdown
+interface g1/0.10
+ description VLAN10-USUARIOS
+ encapsulation dot1Q 10
+ ip address 10.20.25.1 255.255.255.128
+ ip nat inside
+ip route 0.0.0.0 0.0.0.0 20.25.7.1
+
+ip dhcp excluded-address 10.20.25.1 10.20.25.9
+ip dhcp excluded-address 10.20.25.101 10.20.25.126
+ip dhcp pool USUARIOS
+ network 10.20.25.0 255.255.255.128
+ default-router 10.20.25.1
+ dns-server 8.8.8.8
+
+crypto isakmp policy 10
+ encryption des
+ hash sha
+ authentication pre-share
+ group 5
+ lifetime 86400
+crypto isakmp key <CLAVE-PRECOMPARTIDA> address 20.25.98.2
+crypto ipsec transform-set TS-DES esp-des esp-sha-hmac
+ mode tunnel
+ip access-list extended VPN-TRAFFIC
+ permit ip 10.20.25.0 0.0.0.127 10.7.98.0 0.0.0.15
+crypto map CMAP 10 ipsec-isakmp
+ set peer 20.25.98.2
+ set transform-set TS-DES
+ set pfs group5
+ match address VPN-TRAFFIC
+interface f0/0
+ crypto map CMAP
+
+ip access-list extended NAT-ACL
+ deny ip 10.20.25.0 0.0.0.127 10.7.98.0 0.0.0.15
+ permit ip 10.20.25.0 0.0.0.127 any
+ip nat inside source list NAT-ACL interface f0/0 overload
+end
+write memory
